@@ -1,9 +1,12 @@
 import { useState } from "react";
 import { getCountryByName } from "../api/countryApi";
 import SearchBar from "../components/SearchBar";
+import { getTimeByCoordinates } from "../api/timeApi";
+import TimeCard from "../components/TimeCard";
 
 const Dashboard = () => {
   const [country, setCountry] = useState(null);
+  const [timeData, setTimeData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -11,12 +14,20 @@ const Dashboard = () => {
     setLoading(true);
     setError("");
     setCountry(null);
+    setTimeData(null);
 
     try {
-      const data = await getCountryByName(name);
-      setCountry(data);
+      const countryData = await getCountryByName(name);
+      setCountry(countryData);
+
+      const coords = countryData.capitalInfo?.latlng;
+      if (coords) {
+        const [lat, lon] = coords;
+        const timeResponse = await getTimeByCoordinates(lat, lon);
+        setTimeData(timeResponse);
+      }
     } catch (err) {
-      setError("Country not found");
+      setError("Failed to load country or time data");
     } finally {
       setLoading(false);
     }
@@ -38,6 +49,8 @@ const Dashboard = () => {
           <p>Population: {country.population}</p>
         </div>
       )}
+
+      {timeData && <TimeCard timeData={timeData} />}
     </div>
   );
 };
